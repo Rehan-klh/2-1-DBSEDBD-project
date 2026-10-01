@@ -1,0 +1,434 @@
+HOSTEL & MESS MANAGEMENT SYSTEM
+MASTER ANTIGRAVITY IMPLEMENTATION PROMPT
+================================================
+
+You are implementing the backend and full-stack integration for an existing semester project for Database Systems Engineering and Distributed Backend Development (DBSEDBD).
+
+IMPORTANT OPERATING RULES
+--------------------------
+1. The project specification in the supplied Markdown documents is the source of truth.
+2. Do not invent new product features.
+3. Do not silently change locked database design, roles, workflows, or architecture.
+4. Preserve the existing React frontend and its current user-facing functionality. Replace mock/static data with real backend integration.
+5. All implementation/code changes are yours to perform.
+6. Before making major implementation changes, inspect the existing repository thoroughly.
+7. Do not repeatedly pause for confirmation for ordinary implementation decisions that are already covered by the specification.
+8. If an implementation detail is genuinely unspecified, choose the simplest production-appropriate option that preserves the locked design and document the decision.
+9. Keep documentation in `docs/` updated as implementation proceeds.
+10. Do not put secrets into Git.
+
+REFERENCE DOCUMENTS
+-------------------
+Use these documents as the locked specification:
+
+- docs/ER_DIAGRAM.md
+- docs/DATABASE_DESIGN.md
+- docs/ARCHITECTURE.md
+- docs/API_DOCUMENTATION.md
+- docs/PROJECT_DECISIONS.md
+- docs/TESTING.md
+- docs/SETUP.md
+
+PROJECT SCOPE
+-------------
+Project: Hostel & Mess Management System
+
+Roles:
+- STUDENT
+- ADMIN
+
+No third role is required.
+
+EXISTING FRONTEND
+-----------------
+The existing frontend was built with React + Vite + JavaScript.
+
+Preserve the existing UI and functionality, including:
+
+Student:
+- Dashboard
+- Profile
+- View room
+- View mess menu
+- Complaints
+- Leave requests
+- Fees
+- Visitor requests
+- Room change requests
+- Hostel announcements
+- Mess feedback
+
+Admin:
+- Dashboard
+- Students
+- Hostel blocks
+- Rooms
+- Room allocation
+- Leave requests
+- Complaints
+- Mess menu
+- Fees
+- Visitors
+- Announcements
+- Mess feedback
+- Room change requests
+
+The frontend currently uses mock/static data in places. Replace those data sources with real APIs without unnecessarily redesigning the UI.
+
+DATABASE ARCHITECTURE
+---------------------
+Use exactly:
+
+PostgreSQL:
+13 tables:
+1. users
+2. students
+3. hostels
+4. hostel_blocks
+5. rooms
+6. room_allocations
+7. leave_requests
+8. complaints
+9. fees
+10. mess_menu
+11. room_change_requests
+12. visitor_requests
+13. announcements
+
+MongoDB Atlas:
+3 collections:
+14. notifications
+15. mess_feedback
+16. activity_logs
+
+Do not create unnecessary duplicate versions of the same entities in both databases.
+
+POSTGRESQL
+----------
+Use PostgreSQL with SQLAlchemy.
+
+Implement the schema according to docs/ER_DIAGRAM.md and docs/DATABASE_DESIGN.md.
+
+Important rules:
+- users.email is unique.
+- students.user_id is unique.
+- Foreign-key relationships must be enforced.
+- A student may have historical allocations but only one ACTIVE allocation.
+- Room capacity must never be exceeded.
+- Allocation/transfer/release operations must preserve consistency.
+- Approved room-change requests must safely update allocation.
+- Use database transactions for multi-step allocation operations.
+
+MONGODB ATLAS
+-------------
+Use MongoDB Atlas for:
+- notifications
+- mess_feedback
+- activity_logs
+
+Use an appropriate MongoDB driver and keep the implementation straightforward.
+
+AUTHENTICATION AND AUTHORIZATION
+--------------------------------
+Implement:
+- secure password hashing
+- JWT access tokens
+- protected API routes
+- RBAC for STUDENT and ADMIN
+- authenticated-user dependency
+- role-checking dependency
+
+CRITICAL:
+The login page may allow the user to select Student/Admin, but the backend MUST verify that the selected role matches the authenticated account's actual role. Never trust frontend role selection as authorization.
+
+Student endpoints must not be accessible to arbitrary users or other students' private data.
+
+Admin endpoints must require ADMIN role.
+
+API
+---
+Implement the API contract in docs/API_DOCUMENTATION.md.
+
+Main groups:
+
+/auth
+/students
+/hostels
+/rooms
+/allocations
+/room-changes
+/leave
+/complaints
+/mess
+/fees
+/visitors
+/announcements
+/notifications
+/activity-logs
+
+Use Pydantic request/response schemas.
+
+Use proper HTTP status codes and validation errors.
+
+Generate and verify FastAPI OpenAPI/Swagger documentation.
+
+CORE WORKFLOWS
+--------------
+1. LOGIN
+Student/Admin submits email, password, selected role.
+Backend verifies credentials and actual role.
+Return JWT.
+
+2. STUDENT ROOM SELECTION
+Student views available rooms.
+Student selects an available room.
+Backend checks:
+- authenticated student
+- room exists
+- capacity available
+- student does not already have ACTIVE allocation
+Then create ACTIVE allocation.
+
+No admin approval is required for initial selection.
+
+3. ADMIN ROOM MANAGEMENT
+Admin can:
+- create rooms
+- set capacity
+- allocate students
+- remove allocations
+- transfer students
+- directly override/change a student's room
+
+4. ROOM CHANGE REQUEST
+Student:
+current room -> requested room + reason -> PENDING
+
+Admin:
+APPROVED or REJECTED
+
+On approval, update the active allocation safely and enforce capacity.
+
+5. LEAVE
+Student submits request -> PENDING.
+Admin can approve/reject/change status.
+Student can view status.
+
+6. COMPLAINTS
+Student submits complaint -> PENDING.
+Admin can move:
+PENDING -> IN_PROGRESS -> RESOLVED
+and add admin response.
+
+7. VISITORS
+Student submits visitor request -> PENDING.
+Admin approves/rejects.
+
+8. MESS
+Student views menu.
+Admin manages menu.
+Student submits mess feedback.
+Admin views feedback.
+
+9. FEES
+Admin manages fee records/status.
+Student views own fees.
+No real payment gateway.
+
+10. ANNOUNCEMENTS
+Admin creates/updates/deletes.
+Students view.
+
+11. NOTIFICATIONS
+Create appropriate notification documents for important events where practical.
+Students/Admins can view their own notifications and mark them read.
+
+12. ACTIVITY LOGS
+Record important administrative/system actions in MongoDB.
+
+BACKEND ARCHITECTURE
+--------------------
+Use a modular monolith.
+
+Organize backend code into clear modules such as:
+- auth
+- students
+- hostels
+- rooms
+- allocations
+- leave
+- complaints
+- mess
+- fees
+- visitors
+- announcements
+- notifications
+- activity_logs
+
+Keep database access, schemas, services, routes, security, and configuration cleanly separated.
+
+Do not implement actual microservices.
+
+DOCKER
+------
+Provide a simple Docker Compose setup for:
+- frontend
+- backend
+- PostgreSQL
+
+MongoDB Atlas remains external.
+
+Target:
+docker compose up
+
+Ensure environment variables are used for secrets/configuration.
+
+SECURITY
+--------
+- Never store plaintext passwords.
+- Never hardcode JWT secrets.
+- Never commit `.env`.
+- Add appropriate `.gitignore` entries.
+- Use environment configuration.
+- Validate all input on the backend.
+- Enforce RBAC server-side.
+- Do not expose sensitive database credentials.
+
+TESTING
+-------
+Implement practical tests for important backend logic and verify the API using Postman where appropriate.
+
+At minimum test:
+- authentication
+- invalid credentials
+- RBAC
+- room capacity
+- duplicate active allocation prevention
+- room transfer
+- room-change approval/rejection
+- leave workflow
+- complaint workflow
+- visitor workflow
+- fee access
+- announcement management
+- MongoDB notification/feedback/activity behavior
+
+Run frontend:
+npm run lint
+npm run build
+
+Run backend tests using the project's selected test command.
+
+DOCUMENTATION
+-------------
+Maintain:
+
+docs/ER_DIAGRAM.md
+docs/DATABASE_DESIGN.md
+docs/ARCHITECTURE.md
+docs/API_DOCUMENTATION.md
+docs/PROJECT_DECISIONS.md
+docs/TESTING.md
+docs/SETUP.md
+
+Documentation MUST be committed to Git.
+
+Update API documentation when endpoints are implemented or adjusted.
+Update setup instructions when configuration changes.
+Update project decisions when an implementation decision affects architecture or scope.
+Do not create documentation that contradicts the actual implementation.
+
+README
+------
+Create/update README.md with:
+- project overview
+- architecture summary
+- technology stack
+- setup instructions
+- database overview
+- authentication
+- major features
+- Docker startup
+- testing
+- documentation links
+
+SEED DATA
+---------
+Provide a safe development/seed mechanism for demo data if needed.
+
+Include at least:
+- one Admin account
+- one or more Student accounts
+- sample hostel/block/rooms
+- sample menu
+- sample fees
+- sample announcements
+
+Do not commit real credentials or secrets.
+
+QUALITY REQUIREMENTS
+--------------------
+Before declaring implementation complete:
+
+1. Inspect the entire existing frontend.
+2. Implement backend.
+3. Integrate frontend with backend.
+4. Verify PostgreSQL operations.
+5. Verify MongoDB Atlas operations.
+6. Verify JWT/RBAC.
+7. Verify all critical workflows.
+8. Verify Docker.
+9. Run frontend lint/build.
+10. Run backend tests.
+11. Check for broken imports, dead mock-data dependencies, and obvious console/runtime errors.
+12. Update all documentation.
+13. Review the final Git diff for accidental files/secrets.
+14. Ensure `.env` and credentials are not committed.
+
+DO NOT:
+---------
+- Add payment gateway.
+- Add Kafka.
+- Add Kubernetes.
+- Add actual microservices.
+- Add extra roles.
+- Add unnecessary RAG/vector database functionality.
+- Replace PostgreSQL with MySQL.
+- Replace MongoDB Atlas with another NoSQL database.
+- Redesign the product scope without documenting an explicit scope change.
+- Trust frontend role selection.
+- Leave core functionality as mock data after integration.
+
+FINAL ACCEPTANCE
+----------------
+The implementation is complete only when:
+
+React Frontend
+    ->
+FastAPI REST API
+    ->
+JWT/RBAC
+    ->
+Application Modules
+    ->
+PostgreSQL + MongoDB Atlas
+    ->
+JSON Response
+    ->
+Updated React UI
+
+works end-to-end for the major Student and Admin workflows.
+
+At the end, provide a concise implementation report containing:
+- files/modules created or changed
+- database implementation status
+- API implementation status
+- authentication/RBAC status
+- frontend integration status
+- MongoDB status
+- Docker status
+- tests run and results
+- documentation updated
+- any remaining known limitations
+
+Do not claim something passed unless you actually verified it.

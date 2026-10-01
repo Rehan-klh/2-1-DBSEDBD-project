@@ -1,26 +1,39 @@
 import { useMemo, useState } from 'react'
 import './App.css'
-import {
-  adminLeaveRequests,
-  adminNavItems,
-  complaints,
-  leaveRequests,
-  messMenu,
-  studentNavItems,
-  students,
-  weeklyMenu,
-} from './data/mockData'
 import LoginPage from './pages/LoginPage'
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentViews from './pages/student/StudentViews'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminViews from './pages/admin/AdminViews'
 import DashboardLayout from './components/DashboardLayout'
+import { api, getAuthUser, getToken } from './api/client'
 
-const initialSession = {
-  isLoggedIn: false,
-  role: 'student',
-}
+const studentNavItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'DB' },
+  { id: 'room', label: 'My Room', icon: 'RM' },
+  { id: 'mess', label: 'Mess Menu', icon: 'MS' },
+  { id: 'complaints', label: 'Complaints', icon: 'CP' },
+  { id: 'leave', label: 'Leave Requests', icon: 'LV' },
+  { id: 'fees', label: 'Fees', icon: 'FE' },
+  { id: 'visitors', label: 'Visitors', icon: 'VS' },
+  { id: 'announcements', label: 'Announcements', icon: 'AN' },
+  { id: 'profile', label: 'Profile', icon: 'PR' },
+]
+
+const adminNavItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'DB' },
+  { id: 'students', label: 'Students', icon: 'ST' },
+  { id: 'rooms', label: 'Rooms', icon: 'RM' },
+  { id: 'allocations', label: 'Allocations', icon: 'AL' },
+  { id: 'room-changes', label: 'Room Changes', icon: 'RC' },
+  { id: 'leave', label: 'Leave', icon: 'LV' },
+  { id: 'complaints', label: 'Complaints', icon: 'CP' },
+  { id: 'mess', label: 'Mess', icon: 'MS' },
+  { id: 'fees', label: 'Fees', icon: 'FE' },
+  { id: 'visitors', label: 'Visitors', icon: 'VS' },
+  { id: 'announcements', label: 'Notices', icon: 'AN' },
+  { id: 'logs', label: 'Activity Logs', icon: 'LG' },
+]
 
 const routeDefaults = {
   student: 'dashboard',
@@ -28,28 +41,38 @@ const routeDefaults = {
 }
 
 function App() {
-  const [session, setSession] = useState(initialSession)
-  const [activeView, setActiveView] = useState(routeDefaults.student)
-  const [studentComplaintItems, setStudentComplaintItems] = useState(complaints)
-  const [studentLeaveItems, setStudentLeaveItems] = useState(leaveRequests)
-  const [adminLeaveItems, setAdminLeaveItems] = useState(adminLeaveRequests)
-  const [adminStudentItems, setAdminStudentItems] = useState(students)
-  const [adminMenuItems, setAdminMenuItems] = useState(messMenu)
-  const [adminWeeklyItems, setAdminWeeklyItems] = useState(weeklyMenu)
+  const [session, setSession] = useState(() => {
+    const token = getToken()
+    const storedUser = getAuthUser()
+    if (token && storedUser?.role) {
+      return {
+        isLoggedIn: true,
+        role: storedUser.role.toLowerCase(),
+        user: storedUser,
+      }
+    }
+    return {
+      isLoggedIn: false,
+      role: 'student',
+      user: null,
+    }
+  })
+  const [activeView, setActiveView] = useState('dashboard')
 
   const navItems = useMemo(
     () => (session.role === 'admin' ? adminNavItems : studentNavItems),
     [session.role],
   )
 
-  const handleLogin = (role) => {
-    setSession({ isLoggedIn: true, role })
-    setActiveView(routeDefaults[role])
+  const handleLogin = (role, user) => {
+    setSession({ isLoggedIn: true, role, user })
+    setActiveView(routeDefaults[role] || 'dashboard')
   }
 
   const handleLogout = () => {
-    setSession(initialSession)
-    setActiveView(routeDefaults.student)
+    api.auth.logout()
+    setSession({ isLoggedIn: false, role: 'student', user: null })
+    setActiveView('dashboard')
   }
 
   if (!session.isLoggedIn) {
@@ -70,38 +93,14 @@ function App() {
     >
       {isStudent ? (
         activeView === 'dashboard' ? (
-          <StudentDashboard
-            complaints={studentComplaintItems}
-            leaveRequests={studentLeaveItems}
-            onNavigate={setActiveView}
-          />
+          <StudentDashboard onNavigate={setActiveView} />
         ) : (
-          <StudentViews
-            activeView={activeView}
-            complaints={studentComplaintItems}
-            leaveRequests={studentLeaveItems}
-            onAddComplaint={setStudentComplaintItems}
-            onAddLeaveRequest={setStudentLeaveItems}
-          />
+          <StudentViews activeView={activeView} />
         )
       ) : activeView === 'dashboard' ? (
-        <AdminDashboard
-          leaveRequests={adminLeaveItems}
-          onNavigate={setActiveView}
-          students={adminStudentItems}
-        />
+        <AdminDashboard onNavigate={setActiveView} />
       ) : (
-        <AdminViews
-          activeView={activeView}
-          leaveRequests={adminLeaveItems}
-          menuItems={adminMenuItems}
-          onAddStudent={setAdminStudentItems}
-          onUpdateLeaveRequests={setAdminLeaveItems}
-          onUpdateMenuItems={setAdminMenuItems}
-          onUpdateWeeklyMenu={setAdminWeeklyItems}
-          students={adminStudentItems}
-          weeklyMenu={adminWeeklyItems}
-        />
+        <AdminViews activeView={activeView} />
       )}
     </DashboardLayout>
   )

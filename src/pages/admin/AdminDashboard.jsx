@@ -1,34 +1,96 @@
+import { useEffect, useState, useCallback } from 'react'
 import DataTable from '../../components/DataTable'
 import PageHeader from '../../components/PageHeader'
 import StatCard from '../../components/StatCard'
-import {
-  adminComplaints,
-  feeRows,
-  recentActivity,
-  rooms,
-} from '../../data/mockData'
+import { api } from '../../api/client'
 
-function AdminDashboard({ leaveRequests, onNavigate, students }) {
-  const totalRooms = rooms.reduce((sum, room) => sum + room.total, 0)
-  const occupiedRooms = rooms.reduce((sum, room) => sum + room.occupied, 0)
-  const vacantRooms = rooms.reduce((sum, room) => sum + room.vacant, 0)
-  const pendingComplaints = adminComplaints.filter((item) => item.status === 'Pending').length
-  const pendingLeave = leaveRequests.filter((item) => item.status === 'Pending').length
+function AdminDashboard({ onNavigate }) {
+  const [students, setStudents] = useState([])
+  const [rooms, setRooms] = useState([])
+  const [complaints, setComplaints] = useState([])
+  const [leaveRequests, setLeaveRequests] = useState([])
+  const [fees, setFees] = useState([])
+  const [activityLogs, setActivityLogs] = useState([])
+
+  const loadDashboardData = useCallback(() => {
+    Promise.all([
+      api.students.list().catch(() => []),
+      api.rooms.list().catch(() => []),
+      api.complaints.list().catch(() => []),
+      api.leave.list().catch(() => []),
+      api.fees.list().catch(() => []),
+      api.activityLogs.list(10).catch(() => []),
+    ]).then(([stList, rmList, cmList, lvList, feList, actList]) => {
+      setStudents(stList)
+      setRooms(rmList)
+      setComplaints(cmList)
+      setLeaveRequests(lvList)
+      setFees(feList)
+      setActivityLogs(actList)
+    })
+  }, [])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
+
+  const totalCapacity = rooms.reduce((sum, r) => sum + r.capacity, 0)
+  const occupiedSpaces = rooms.reduce((sum, r) => sum + r.occupied_count, 0)
+  const vacantSpaces = Math.max(0, totalCapacity - occupiedSpaces)
+  const pendingComplaints = complaints.filter((item) => item.status === 'PENDING').length
+  const pendingLeave = leaveRequests.filter((item) => item.status === 'PENDING').length
+
+  // Group rooms by block for occupancy visualizer
+  const blockMap = {}
+  rooms.forEach((r) => {
+    const bName = r.block_name || 'Block A'
+    if (!blockMap[bName]) {
+      blockMap[bName] = { block: bName, total: 0, occupied: 0, vacant: 0 }
+    }
+    blockMap[bName].total += r.capacity
+    blockMap[bName].occupied += r.occupied_count
+    blockMap[bName].vacant += r.available_capacity
+  })
+  const blockStats = Object.values(blockMap)
+
+  // Fee categories summary
+  const feeSummary = [
+    {
+      category: 'Hostel Fee',
+      pending: `Rs. ${fees.filter((f) => f.fee_type.toLowerCase().includes('hostel') && f.status !== 'PAID').reduce((sum, f) => sum + (f.amount - f.paid_amount), 0).toLocaleString('en-IN')}`,
+      count: fees.filter((f) => f.fee_type.toLowerCase().includes('hostel') && f.status !== 'PAID').length,
+    },
+    {
+      category: 'Mess Fee',
+      pending: `Rs. ${fees.filter((f) => f.fee_type.toLowerCase().includes('mess') && f.status !== 'PAID').reduce((sum, f) => sum + (f.amount - f.paid_amount), 0).toLocaleString('en-IN')}`,
+      count: fees.filter((f) => f.fee_type.toLowerCase().includes('mess') && f.status !== 'PAID').length,
+    },
+    {
+      category: 'Security Deposit',
+      pending: `Rs. ${fees.filter((f) => f.fee_type.toLowerCase().includes('deposit') && f.status !== 'PAID').reduce((sum, f) => sum + (f.amount - f.paid_amount), 0).toLocaleString('en-IN')}`,
+      count: fees.filter((f) => f.fee_type.toLowerCase().includes('deposit') && f.status !== 'PAID').length,
+    },
+  ]
 
   return (
     <section className="content-stack">
       <PageHeader
+        action={<button onClick={() => onNavigate('students')} type="button">Manage students</button>}
+        description="Monitor occupancy, student support, leave approvals, mess planning and fee collection."
         eyebrow="Admin dashboard"
         title="Hostel operations overview"
-        description="Monitor occupancy, student support, leave approvals, mess planning and fee collection."
-        action={<button onClick={() => onNavigate('students')} type="button">Manage students</button>}
       />
 
       <div className="stats-grid admin-stats operations-strip">
-        <StatCard label="Total students" value={students.length} helper="Active hostel records" />
-        <StatCard label="Occupied rooms" value={occupiedRooms} helper={`${vacantRooms} vacant of ${totalRooms}`} tone="green" />
-        <StatCard label="Pending complaints" value={pendingComplaints} helper="Need assignment" tone="orange" />
-        <StatCard label="Pending leave" value={pendingLeave} helper="Awaiting approval" tone="red" />
+        <StatCard helper="Active hostel records" label="Total students" value={students.length} />
+        <StatCard
+          helper={`${vacantSpaces} vacant of ${totalCapacity} beds`}
+          label="Occupied capacity"
+          tone="green"
+          value={occupiedSpaces}
+        />
+        <StatCard helper="Need review" label="Pending complaints" tone="orange" value={pendingComplaints} />
+        <StatCard helper="Awaiting decision" label="Pending leave" tone="red" value={pendingLeave} />
       </div>
 
       <div className="dashboard-grid">
@@ -38,25 +100,24 @@ function AdminDashboard({ leaveRequests, onNavigate, students }) {
             <button onClick={() => onNavigate('rooms')} type="button">View rooms</button>
           </div>
           <div className="occupancy-bars">
-            {rooms.map((room) => (
-              <div className="occupancy-row" key={room.block}>
-                <span>Block {room.block}</span>
+            {blockStats.map((b) => (
+              <div className="occupancy-row" key={b.block}>
+                <span>{b.block}</span>
                 <div className="progress-track">
-                  <div style={{ width: `${(room.occupied / room.total) * 100}%` }} />
+                  <div style={{ width: `${b.total > 0 ? (b.occupied / b.total) * 100 : 0}%` }} />
                 </div>
-                <strong>{room.vacant} vacant</strong>
+                <strong>{b.vacant} vacant</strong>
               </div>
             ))}
           </div>
           <DataTable
             columns={[
               { key: 'block', label: 'Block' },
-              { key: 'total', label: 'Total' },
+              { key: 'total', label: 'Capacity' },
               { key: 'occupied', label: 'Occupied' },
               { key: 'vacant', label: 'Vacant' },
-              { key: 'warden', label: 'Warden' },
             ]}
-            rows={rooms}
+            rows={blockStats}
           />
         </article>
 
@@ -66,11 +127,11 @@ function AdminDashboard({ leaveRequests, onNavigate, students }) {
             <button onClick={() => onNavigate('fees')} type="button">Open fees</button>
           </div>
           <div className="fee-stack">
-            {feeRows.map((row) => (
+            {feeSummary.map((row) => (
               <div className="fee-item" key={row.category}>
                 <div>
                   <strong>{row.category}</strong>
-                  <span>{row.students} students pending</span>
+                  <span>{row.count} records pending</span>
                 </div>
                 <p>{row.pending}</p>
               </div>
@@ -80,12 +141,19 @@ function AdminDashboard({ leaveRequests, onNavigate, students }) {
 
         <article className="panel">
           <div className="panel-header">
-            <h2>Recent activity</h2>
+            <h2>Audit & Activity logs</h2>
           </div>
           <ul className="activity-list">
-            {recentActivity.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
+            {activityLogs.length > 0 ? (
+              activityLogs.map((log) => (
+                <li key={log.id || log.timestamp}>
+                  <strong>[{log.role}] {log.action}: </strong>
+                  <span>{JSON.stringify(log.details)}</span>
+                </li>
+              ))
+            ) : (
+              <li>No recent activity logs.</li>
+            )}
           </ul>
         </article>
       </div>
