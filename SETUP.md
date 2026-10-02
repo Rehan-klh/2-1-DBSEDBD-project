@@ -67,11 +67,17 @@ hostel-mess-management/
 
 Secrets must be stored in `.env` files and must never be committed.
 
+Create a `.env` file in the project root by copying `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
 Sample `.env`:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgrespassword@localhost:5432/hostel_db
-MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+MONGODB_URI=
 MONGODB_DB_NAME=hostel_mess_db
 JWT_SECRET=your_strong_random_jwt_secret_key_min_32_chars
 JWT_ALGORITHM=HS256
@@ -81,6 +87,7 @@ VITE_API_URL=http://localhost:8000/api
 ```
 
 > **Security & Configuration Notes**:
+> - **.env Placement**: The `.env` file belongs in the project root. It is automatically detected by `config.py`, `start.bat`, and `docker-compose.yml`.
 > - **JWT_SECRET**: Required in non-test configurations. The application will fail startup if `JWT_SECRET` is missing or empty.
 > - **MongoDB Atlas**: When `MONGODB_URI` is provided, the backend verifies connectivity on startup. If the Atlas cluster is unreachable (bad URI, network down, IP not whitelisted in Atlas Network Access), the app will raise a `ConnectionError` on startup rather than silently masking connectivity problems. To develop offline without an Atlas instance, leave `MONGODB_URI` empty to engage the in-memory fallback.
 > - **CORS Origins**: Wildcard origins (`*`) are disallowed. Only explicit origins are permitted, configurable via the `CORS_ORIGINS` environment variable.
@@ -95,7 +102,12 @@ VITE_API_URL=http://localhost:8000/api
 pip install -r backend/requirements.txt
 ```
 
-2. Seed initial admin, students, hostel blocks, rooms, mess menu, and sample data:
+2. Initialize `.env` (if not done yet):
+```bash
+cp .env.example .env
+```
+
+3. Seed initial admin, students, hostel blocks, rooms, mess menu, and sample data:
 ```bash
 python -m backend.app.seed
 ```

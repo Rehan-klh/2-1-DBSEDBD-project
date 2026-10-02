@@ -1,6 +1,6 @@
 from datetime import datetime, date, time
 from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # --- Auth ---
 class LoginRequest(BaseModel):
@@ -23,8 +23,7 @@ class UserResponse(BaseModel):
     role: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Student ---
 class StudentCreate(BaseModel):
@@ -57,8 +56,7 @@ class StudentResponse(BaseModel):
     email: Optional[str] = None
     current_room: Optional[Dict[str, Any]] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Hostels & Blocks ---
 class BlockResponse(BaseModel):
@@ -66,8 +64,7 @@ class BlockResponse(BaseModel):
     hostel_id: int
     block_name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class HostelResponse(BaseModel):
     hostel_id: int
@@ -75,8 +72,7 @@ class HostelResponse(BaseModel):
     location: Optional[str] = None
     blocks: List[BlockResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Rooms ---
 class RoomCreate(BaseModel):
@@ -101,8 +97,7 @@ class RoomResponse(BaseModel):
     occupied_count: int = 0
     available_capacity: int = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Allocations ---
 class AllocationCreateStudent(BaseModel):
@@ -126,8 +121,7 @@ class AllocationResponse(BaseModel):
     released_at: Optional[datetime] = None
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Room Changes ---
 class RoomChangeCreate(BaseModel):
@@ -152,8 +146,7 @@ class RoomChangeResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Leave Requests ---
 class LeaveCreate(BaseModel):
@@ -179,8 +172,7 @@ class LeaveResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Complaints ---
 class ComplaintCreate(BaseModel):
@@ -206,8 +198,7 @@ class ComplaintResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Mess Menu ---
 class MessMenuCreate(BaseModel):
@@ -228,8 +219,7 @@ class MessMenuResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Mess Feedback (MongoDB Atlas) ---
 class MessFeedbackCreate(BaseModel):
@@ -272,8 +262,7 @@ class FeeResponse(BaseModel):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Visitor Requests ---
 class VisitorCreate(BaseModel):
@@ -304,8 +293,7 @@ class VisitorResponse(BaseModel):
     admin_comment: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Announcements ---
 class AnnouncementCreate(BaseModel):
@@ -329,8 +317,7 @@ class AnnouncementResponse(BaseModel):
     published_at: datetime
     expires_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Notifications (MongoDB Atlas) ---
 class NotificationResponse(BaseModel):

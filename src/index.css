@@ -1,26 +1,92 @@
-* {
-  box-sizing: border-box;
-}
-
+/* ─── Design Tokens ─────────────────────────────────────────────────────── */
 :root {
-  color: #182230;
-  background: #eef3f8;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  /* Brand palette */
+  --color-primary:        #0e7490;
+  --color-primary-dark:   #0c5f73;
+  --color-primary-light:  #e0f2f7;
+  --color-primary-glow:   rgba(14, 116, 144, 0.18);
+
+  /* Surface & background */
+  --color-bg:             #f0f5f9;
+  --color-surface:        #ffffff;
+  --color-surface-dim:    #f6fafc;
+  --color-border:         #dde5ed;
+  --color-border-light:   #eef3f8;
+
+  /* Text */
+  --color-text-base:      #182230;
+  --color-text-muted:     #60748a;
+  --color-text-label:     #344054;
+  --color-text-heading:   #0f1f30;
+
+  /* Status */
+  --color-success:        #067647;
+  --color-success-bg:     #dcfae6;
+  --color-success-border: #a9efc5;
+  --color-warning:        #93370d;
+  --color-warning-bg:     #fef0c7;
+  --color-warning-border: #fcd86f;
+  --color-danger:         #b42318;
+  --color-danger-bg:      #fee4e2;
+  --color-danger-border:  #fecdca;
+  --color-info:           #175cd3;
+  --color-info-bg:        #dbeafe;
+  --color-info-border:    #93c5fd;
+  --color-neutral:        #475467;
+  --color-neutral-bg:     #eef2f6;
+
+  /* Accent */
+  --color-accent:         #f4c95d;
+  --color-accent-dim:     #fff8df;
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+
+  /* Sizing */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   18px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(16, 36, 54, 0.06), 0 1px 2px rgba(16, 36, 54, 0.04);
+  --shadow-md:  0 4px 16px rgba(14, 36, 54, 0.09), 0 1px 4px rgba(14, 36, 54, 0.06);
+  --shadow-lg:  0 12px 36px rgba(14, 36, 54, 0.12), 0 2px 8px rgba(14, 36, 54, 0.07);
+  --shadow-xl:  0 24px 60px rgba(14, 36, 54, 0.16), 0 4px 16px rgba(14, 36, 54, 0.09);
+
+  /* Transitions */
+  --transition-fast:   0.14s ease;
+  --transition-base:   0.22s ease;
+  --transition-slow:   0.34s ease;
+
+  color: var(--color-text-base);
+  background: var(--color-bg);
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(29, 78, 216, 0.08), transparent 34rem),
-    linear-gradient(135deg, #f7fbff 0%, #edf3f8 52%, #f6f8f4 100%);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(14, 116, 144, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(15, 107, 120, 0.07) 0%, transparent 55%);
 }
 
 button,
@@ -36,4 +102,20 @@ button {
 
 #root {
   min-height: 100vh;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b0bec8;
 }

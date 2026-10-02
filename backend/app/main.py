@@ -14,6 +14,9 @@ from backend.app.routers import (
 async def lifespan(app: FastAPI):
     # Initialize PostgreSQL tables
     Base.metadata.create_all(bind=engine)
+    # Ensure database is seeded with initial demo data if empty
+    from backend.app.seed import seed_database
+    seed_database(force_reseed=False)
     # Initialize MongoDB connection
     mongo_db.connect()
     yield
