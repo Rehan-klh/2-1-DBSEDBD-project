@@ -95,30 +95,47 @@ VITE_API_URL=http://localhost:8000/api
 
 ## Local Development
 
-### 1. Backend
+### 1. Backend (PostgreSQL + FastAPI)
 
 1. Install Python dependencies:
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-2. Initialize `.env` (if not done yet):
+2. Initialize `.env` from `.env.example`:
 ```bash
 cp .env.example .env
 ```
-
-3. Seed initial admin, students, hostel blocks, rooms, mess menu, and sample data:
-```bash
-python -m backend.app.seed
+Ensure `DATABASE_URL` in `.env` is configured with your PostgreSQL credentials:
+```env
+DATABASE_URL=postgresql://postgres:<password>@localhost:5432/hostel_db
 ```
 
-3. Start the FastAPI server:
-```bash
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+3. Create the PostgreSQL databases:
+```sql
+-- Connect via psql:
+-- psql -U postgres -h localhost
+CREATE DATABASE hostel_db;
+CREATE DATABASE hostel_db_test;
 ```
-Swagger UI is available at: `http://localhost:8000/docs`
 
-4. Run automated test suite:
+4. Populate database data:
+- **Option A (Data Migration from SQLite):** If migrating existing data from `hostel_mess.db`:
+  ```bash
+  python -m backend.app.migrate_sqlite_to_pg
+  ```
+- **Option B (Fresh Seed):** If setting up a fresh database:
+  ```bash
+  python -m backend.app.seed
+  ```
+
+5. Start the FastAPI development server:
+```bash
+python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+Swagger UI documentation is available at: `http://localhost:8000/docs`
+
+6. Run automated test suite (uses isolated `hostel_db_test`):
 ```bash
 python -m pytest backend/tests -v
 ```

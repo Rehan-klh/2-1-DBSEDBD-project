@@ -33,7 +33,7 @@ def is_testing_environment() -> bool:
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Hostel & Mess Management System"
     API_PREFIX: str = "/api"
-    DATABASE_URL: str = "sqlite:///./hostel_mess.db"
+    DATABASE_URL: str = ""
     MONGODB_URI: str = ""
     MONGODB_DB_NAME: str = "hostel_mess_db"
     JWT_SECRET: str = ""
@@ -52,6 +52,14 @@ class Settings(BaseSettings):
         extra="allow"
     )
 
+    @property
+    def SQLALCHEMY_DATABASE_URL(self) -> str:
+        """Returns SQLAlchemy-compatible URL, ensuring psycopg2 driver is used for PostgreSQL."""
+        url = self.DATABASE_URL.strip() if self.DATABASE_URL else ""
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return url
+
     @field_validator("CORS_ORIGINS", mode="after")
     @classmethod
     def assemble_cors_origins(cls, v: Any) -> list[str]:
@@ -67,7 +75,28 @@ class Settings(BaseSettings):
         ]
 
     @model_validator(mode="after")
-    def validate_jwt_secret(self):
+    def validate_database_and_jwt(self):
+        # 1. Validate DATABASE_URL
+        if not self.DATABASE_URL or not self.DATABASE_URL.strip():
+            raise RuntimeError(
+                "DATABASE_URL configuration is missing. PostgreSQL is the required relational database. "
+                "Please configure DATABASE_URL in your .env file or environment (e.g., "
+                "DATABASE_URL=postgresql://postgres:<password>@localhost:5432/hostel_db)."
+            )
+        db_url = self.DATABASE_URL.strip().lower()
+        if not is_testing_environment():
+            if db_url.startswith("sqlite"):
+                raise RuntimeError(
+                    "SQLite fallback is disabled for normal runtime. PostgreSQL is the required database. "
+                    "Please configure a valid PostgreSQL connection in DATABASE_URL (e.g., "
+                    "DATABASE_URL=postgresql://postgres:<password>@localhost:5432/hostel_db)."
+                )
+            if not db_url.startswith("postgresql"):
+                raise RuntimeError(
+                    f"Invalid DATABASE_URL scheme: expected PostgreSQL connection string starting with 'postgresql://' or 'postgresql+psycopg2://'."
+                )
+
+        # 2. Validate JWT_SECRET
         if not self.JWT_SECRET or not self.JWT_SECRET.strip():
             if is_testing_environment():
                 self.JWT_SECRET = "test-only-temporary-secret-key-for-automated-tests-32char"
@@ -78,3 +107,4 @@ class Settings(BaseSettings):
         return self
 
 settings = Settings()
+

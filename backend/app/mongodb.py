@@ -1,10 +1,29 @@
 import datetime
 import logging
 from typing import Any, Dict, List, Optional
+import urllib.parse
 from pymongo import MongoClient
 from backend.app.config import settings, is_testing_environment
 
 logger = logging.getLogger(__name__)
+
+def normalize_mongo_uri(uri: str) -> str:
+    """URL-encodes username and password according to RFC 3986 to handle @ or special characters safely."""
+    if not uri or "://" not in uri or "@" not in uri:
+        return uri
+    try:
+        scheme, rest = uri.split("://", 1)
+        last_at = rest.rfind("@")
+        userinfo = rest[:last_at]
+        hostpart = rest[last_at + 1:]
+        if ":" in userinfo:
+            user, pwd = userinfo.split(":", 1)
+            user_clean = urllib.parse.quote_plus(urllib.parse.unquote_plus(user))
+            pwd_clean = urllib.parse.quote_plus(urllib.parse.unquote_plus(pwd))
+            return f"{scheme}://{user_clean}:{pwd_clean}@{hostpart}"
+    except Exception:
+        pass
+    return uri
 
 class MongoManager:
     def __init__(self):
@@ -21,9 +40,10 @@ class MongoManager:
     def connect(self):
         if settings.MONGODB_URI:
             try:
+                safe_uri = normalize_mongo_uri(settings.MONGODB_URI)
                 self.client = MongoClient(
-                    settings.MONGODB_URI,
-                    serverSelectionTimeoutMS=3000
+                    safe_uri,
+                    serverSelectionTimeoutMS=4000
                 )
                 # Verify connection
                 self.client.admin.command('ping')

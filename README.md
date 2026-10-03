@@ -87,11 +87,16 @@ docker compose up --build
 # Install dependencies
 pip install -r backend/requirements.txt
 
-# Run database schema migrations & sample seed data
-python -m backend.app.seed
+# Configure environment with PostgreSQL connection
+cp .env.example .env
+# Set DATABASE_URL=postgresql://postgres:<password>@localhost:5432/hostel_db in .env
+
+# Migrate existing SQLite data or seed fresh PostgreSQL database:
+python -m backend.app.migrate_sqlite_to_pg  # To migrate from SQLite
+# or: python -m backend.app.seed           # For fresh database initialization
 
 # Start the FastAPI development server
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 #### 2. Frontend Setup
